@@ -26,7 +26,12 @@ class CreatedAtMixin:
 
 @lru_cache
 def get_engine() -> Engine:
-    return create_engine(get_settings().database_url, pool_pre_ping=True)
+    settings = get_settings()
+    return create_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+        connect_args={"options": f"-c timezone={settings.timezone}"},
+    )
 
 
 @lru_cache

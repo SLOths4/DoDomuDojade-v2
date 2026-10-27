@@ -186,7 +186,7 @@ def upgrade() -> None:
     op.bulk_insert(
         modules,
         [
-            {"name": name, "is_active": True, "start_time": time(0, 0), "end_time": time(23, 59)}
+            {"name": name, "is_active": True, "start_time": time(0, 0), "end_time": time(0, 0)}
             for name in (
                 "announcement",
                 "calendar",

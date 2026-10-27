@@ -17,6 +17,7 @@ Użycie: ./ddd <polecenie>
   ps                 stan kontenerów
   migrate            aktualizuje schemat bazy
   user add <login>   dodaje użytkownika (hasło zostanie zapytane; --role admin|moderator)
+  cleanup            usuwa stare odrzucone ogłoszenia i stary dziennik zdarzeń
   backup             zrzut bazy do katalogu backups/
 EOF
 }
@@ -40,6 +41,7 @@ case "$cmd" in
   ps) compose ps ;;
   migrate) app_cli migrate ;;
   user) app_cli user "$@" ;;
+  cleanup) app_cli cleanup ;;
   backup)
     mkdir -p backups
     file="backups/dodomudojade-$(date +%Y%m%d-%H%M%S).sql"

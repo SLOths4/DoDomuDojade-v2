@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.core.db import get_sessionmaker
 from app.core.security import MIN_PASSWORD_LENGTH, hash_password
+from app.maintenance import cleanup as cleanup_db
 from app.users.models import Role, User
 
 app = typer.Typer(help="DoDomuDojadę: polecenia administracyjne.", no_args_is_help=True)
@@ -21,6 +22,17 @@ ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
 def migrate() -> None:
     """Aktualizuje schemat bazy do najnowszej wersji."""
     command.upgrade(Config(str(ALEMBIC_INI)), "head")
+
+
+@app.command()
+def cleanup() -> None:
+    """Usuwa stare odrzucone ogłoszenia i stare wpisy dziennika zdarzeń."""
+    with get_sessionmaker()() as session:
+        result = cleanup_db(session)
+    typer.echo(
+        f"Usunięto odrzucone ogłoszenia: {result['rejected_announcements']}, "
+        f"zdarzenia: {result['events']}."
+    )
 
 
 @user_app.command("add")

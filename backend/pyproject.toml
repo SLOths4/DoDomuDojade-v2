@@ -6,9 +6,11 @@ license = "CC-BY-NC-4.0"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.20.1",
+    "apscheduler>=3.10,<4",
     "bcrypt>=5.0.0",
     "fastapi>=0.162.0",
     "httpx>=0.28.1",
+    "itsdangerous>=2.2.0",
     "psycopg[binary]>=3.2",
     "pydantic-settings>=2.16.1",
     "sqlalchemy>=2.0",
@@ -42,6 +44,10 @@ python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["alembic/versions/"]
+
+[[tool.mypy.overrides]]
+module = ["apscheduler.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

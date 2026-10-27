@@ -6,5 +6,21 @@
   "errors.METHOD_NOT_ALLOWED": "Niedozwolona metoda.",
   "errors.HTTP_ERROR": "Błąd żądania.",
   "errors.DATABASE_UNAVAILABLE": "Baza danych jest niedostępna.",
-  "errors.INTERNAL_SERVER_ERROR": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie."
+  "errors.INTERNAL_SERVER_ERROR": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie.",
+  "errors.CSRF_INVALID": "Sesja formularza wygasła. Odśwież stronę i spróbuj ponownie.",
+  "errors.INVALID_CREDENTIALS": "Niepoprawny login lub hasło.",
+  "errors.TOO_MANY_ATTEMPTS": "Zbyt wiele nieudanych prób logowania. Spróbuj ponownie za 15 minut.",
+  "errors.PASSWORD_CHANGE_REQUIRED": "Przed dalszą pracą zmień hasło.",
+  "errors.INVALID_PASSWORD": "Obecne hasło jest niepoprawne.",
+  "errors.PASSWORD_UNCHANGED": "Nowe hasło musi różnić się od obecnego.",
+  "errors.USER_NOT_FOUND": "Nie znaleziono użytkownika.",
+  "errors.USERNAME_TAKEN": "Login {username} jest już zajęty.",
+  "errors.CANNOT_CHANGE_OWN_ACCESS": "Nie możesz zmienić własnej roli ani dezaktywować własnego konta.",
+  "errors.CANNOT_DELETE_SELF": "Nie możesz usunąć własnego konta.",
+  "errors.ANNOUNCEMENT_NOT_FOUND": "Nie znaleziono ogłoszenia.",
+  "errors.VALID_UNTIL_OUT_OF_RANGE": "Data ważności musi być między {min} a {max}.",
+  "errors.TOO_MANY_PROPOSALS": "Wysłano zbyt wiele propozycji. Spróbuj ponownie za godzinę.",
+  "errors.COUNTDOWN_NOT_FOUND": "Nie znaleziono odliczania.",
+  "errors.COUNT_TO_IN_PAST": "Data odliczania musi być w przyszłości.",
+  "errors.MODULE_NOT_FOUND": "Nie znaleziono modułu."
 }

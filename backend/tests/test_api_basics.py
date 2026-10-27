@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from app.core.errors import AppError
 from app.main import create_app
+from tests.conftest import ApiClient
 
 
 class Payload(BaseModel):
@@ -24,7 +25,9 @@ def make_client() -> TestClient:
     def crash() -> None:
         raise RuntimeError("boom")
 
-    return TestClient(app, raise_server_exceptions=False)
+    api = ApiClient(app, raise_server_exceptions=False)
+    api.get("/api/health")
+    return api
 
 
 def test_health(client: TestClient) -> None:
@@ -67,3 +70,14 @@ def test_unexpected_error_is_500_envelope() -> None:
     response = make_client().get("/api/_test/crash")
     assert response.status_code == 500
     assert response.json()["data"]["code"] == "INTERNAL_SERVER_ERROR"
+
+
+def test_unsafe_request_without_csrf_token_is_rejected(client: TestClient) -> None:
+    response = client.post("/api/auth/logout")
+    assert response.status_code == 403
+    assert response.json()["data"]["code"] == "CSRF_INVALID"
+
+
+def test_safe_request_sets_csrf_cookie(client: TestClient) -> None:
+    client.get("/api/health")
+    assert client.cookies.get("csrf_token")

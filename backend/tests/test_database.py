@@ -1,41 +1,47 @@
-from pathlib import Path
+import uuid
+from collections.abc import Iterator
 
 import pytest
 from alembic import command
 from alembic.config import Config
+from sqlalchemy import Engine, delete
 from typer.testing import CliRunner
 
 from app.cli import app as cli_app
-from app.core.config import get_settings
-from app.core.db import get_engine, get_sessionmaker
+from app.core.db import get_sessionmaker
+from app.users.models import User
+from tests.conftest import ALEMBIC_INI
 
 pytestmark = pytest.mark.db
 
-ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
 
-
-@pytest.fixture
-def migrated_db(database_url: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATABASE_URL", database_url)
-    for cached in (get_settings, get_engine, get_sessionmaker):
-        cached.cache_clear()
-    config = Config(str(ALEMBIC_INI))
-    command.downgrade(config, "base")
-    command.upgrade(config, "head")
-
-
-def test_models_match_migrations(migrated_db: None) -> None:
+def test_models_match_migrations(db_engine: Engine) -> None:
     command.check(Config(str(ALEMBIC_INI)))
 
 
-def test_cli_adds_user(migrated_db: None) -> None:
+@pytest.fixture
+def cli_username(db_engine: Engine) -> Iterator[str]:
+    username = f"cli-{uuid.uuid4().hex[:8]}"
+    yield username
+    with get_sessionmaker()() as session:
+        session.execute(delete(User).where(User.username == username))
+        session.commit()
+
+
+def test_cli_adds_user(cli_username: str) -> None:
     runner = CliRunner()
-    result = runner.invoke(cli_app, ["user", "add", "admin", "--password", "bardzo-tajne"])
+    args = ["user", "add", cli_username, "--password", "bardzo-tajne"]
+    result = runner.invoke(cli_app, args)
     assert result.exit_code == 0, result.output
-    duplicate = runner.invoke(cli_app, ["user", "add", "admin", "--password", "bardzo-tajne"])
-    assert duplicate.exit_code == 1
+    assert runner.invoke(cli_app, args).exit_code == 1
 
 
-def test_cli_rejects_short_password(migrated_db: None) -> None:
-    result = CliRunner().invoke(cli_app, ["user", "add", "ktos", "--password", "krotkie"])
+def test_cli_rejects_short_password(cli_username: str) -> None:
+    result = CliRunner().invoke(cli_app, ["user", "add", cli_username, "--password", "krotkie"])
     assert result.exit_code == 1
+
+
+def test_cli_cleanup_runs(db_engine: Engine) -> None:
+    result = CliRunner().invoke(cli_app, ["cleanup"])
+    assert result.exit_code == 0, result.output
+    assert "Usunięto" in result.output

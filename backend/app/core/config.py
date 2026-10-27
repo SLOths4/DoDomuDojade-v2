@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     contact_email: str = "sloths4@spolecznaczworka.pl"
 
+    cookie_secure: bool = False
+    session_max_age_days: int = 7
+    scheduler_enabled: bool = True
+
     stop_name: str = "AWF"
     stop_codes: str = ""
 

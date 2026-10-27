@@ -6,5 +6,21 @@
   "errors.METHOD_NOT_ALLOWED": "Method not allowed.",
   "errors.HTTP_ERROR": "Request error.",
   "errors.DATABASE_UNAVAILABLE": "The database is unavailable.",
-  "errors.INTERNAL_SERVER_ERROR": "Something went wrong. Please try again."
+  "errors.INTERNAL_SERVER_ERROR": "Something went wrong. Please try again.",
+  "errors.CSRF_INVALID": "The form session expired. Refresh the page and try again.",
+  "errors.INVALID_CREDENTIALS": "Incorrect username or password.",
+  "errors.TOO_MANY_ATTEMPTS": "Too many failed sign-in attempts. Try again in 15 minutes.",
+  "errors.PASSWORD_CHANGE_REQUIRED": "Change your password to continue.",
+  "errors.INVALID_PASSWORD": "Your current password is incorrect.",
+  "errors.PASSWORD_UNCHANGED": "The new password must be different from the current one.",
+  "errors.USER_NOT_FOUND": "User not found.",
+  "errors.USERNAME_TAKEN": "The username {username} is already taken.",
+  "errors.CANNOT_CHANGE_OWN_ACCESS": "You cannot change your own role or deactivate your own account.",
+  "errors.CANNOT_DELETE_SELF": "You cannot delete your own account.",
+  "errors.ANNOUNCEMENT_NOT_FOUND": "Announcement not found.",
+  "errors.VALID_UNTIL_OUT_OF_RANGE": "The expiry date must be between {min} and {max}.",
+  "errors.TOO_MANY_PROPOSALS": "Too many proposals sent. Try again in an hour.",
+  "errors.COUNTDOWN_NOT_FOUND": "Countdown not found.",
+  "errors.COUNT_TO_IN_PAST": "The countdown date must be in the future.",
+  "errors.MODULE_NOT_FOUND": "Module not found."
 }
