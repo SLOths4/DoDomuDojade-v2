@@ -1,0 +1,9 @@
+{
+  "app.name": "DoDomuDojadę",
+  "panel.title": "Panel administracyjny",
+  "panel.under_construction": "Panel jest w budowie.",
+  "panel.language": "Język",
+  "status.api": "Połączenie z serwerem",
+  "status.ok": "działa",
+  "status.error": "brak połączenia"
+}

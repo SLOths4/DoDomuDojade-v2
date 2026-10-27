@@ -1,0 +1,16 @@
+:80 {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy api:8000 {
+			# Server-sent events must reach the display immediately.
+			flush_interval -1
+		}
+	}
+
+	handle {
+		root * /srv
+		try_files {path} {path}/index.html
+		file_server
+	}
+}

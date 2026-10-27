@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Skrót do najczęstszych operacji na DoDomuDojadę (Docker Compose).
+set -euo pipefail
+cd "$(dirname "$0")"
+
+compose() { docker compose "$@"; }
+app_cli() { compose exec api python -m app.cli "$@"; }
+
+usage() {
+  cat <<'EOF'
+Użycie: ./ddd <polecenie>
+
+  up                 buduje i uruchamia aplikację w tle
+  down               zatrzymuje aplikację
+  restart            restartuje aplikację
+  logs [usługa]      pokazuje logi (api, web, db)
+  ps                 stan kontenerów
+  migrate            aktualizuje schemat bazy
+  user add <login>   dodaje użytkownika (hasło zostanie zapytane; --role admin|moderator)
+  backup             zrzut bazy do katalogu backups/
+EOF
+}
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  up)
+    if [[ ! -f .env ]]; then
+      echo "Brak pliku .env. Skopiuj .env.example do .env i uzupełnij." >&2
+      exit 1
+    fi
+    compose up -d --build --wait
+    port="$(grep -E '^HTTP_PORT=' .env | cut -d= -f2 | tr -d '[:space:]')"
+    echo "Aplikacja działa: http://localhost:${port:-80}/"
+    ;;
+  down) compose down ;;
+  restart) compose restart ;;
+  logs) compose logs -f --tail=100 "$@" ;;
+  ps) compose ps ;;
+  migrate) app_cli migrate ;;
+  user) app_cli user "$@" ;;
+  backup)
+    mkdir -p backups
+    file="backups/dodomudojade-$(date +%Y%m%d-%H%M%S).sql"
+    compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$file"
+    echo "Zapisano $file"
+    ;;
+  help | -h | --help) usage ;;
+  *)
+    echo "Nieznane polecenie: $cmd" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

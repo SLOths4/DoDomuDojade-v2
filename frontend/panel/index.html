@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DoDomuDojadę — panel</title>
+  <link rel="stylesheet" href="/shared/styles.css">
+  <script type="module" src="./panel.js"></script>
+  <script defer src="/shared/vendor/alpine.min.js"></script>
+</head>
+<body class="min-h-screen bg-beige font-sans text-gray-900">
+  <div x-data="panelShell" x-cloak class="mx-auto max-w-3xl p-6 space-y-6">
+    <header class="flex flex-wrap items-center justify-between gap-4">
+      <h1 class="text-2xl font-bold text-primary" x-text="t('panel.title')"></h1>
+      <label class="flex items-center gap-2 text-sm">
+        <span x-text="t('panel.language')"></span>
+        <select id="locale" x-model="locale" @change="switchLocale()" class="rounded border border-gray-300 bg-white px-2 py-1">
+          <option value="pl">Polski</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+    </header>
+    <section class="rounded-xl bg-white p-6 shadow-custom space-y-2">
+      <p x-text="t('panel.under_construction')"></p>
+      <p class="text-sm text-gray-600">
+        <span x-text="t('status.api')"></span>:
+        <span :class="apiOk ? 'text-green-700' : 'text-red-700'" x-text="t(apiOk ? 'status.ok' : 'status.error')"></span>
+      </p>
+    </section>
+  </div>
+</body>
+</html>

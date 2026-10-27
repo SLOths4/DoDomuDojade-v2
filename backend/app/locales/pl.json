@@ -1,0 +1,10 @@
+{
+  "errors.VALIDATION_ERROR": "Niepoprawne dane w formularzu.",
+  "errors.UNAUTHENTICATED": "Zaloguj się, aby kontynuować.",
+  "errors.FORBIDDEN": "Nie masz uprawnień do tej operacji.",
+  "errors.NOT_FOUND": "Nie znaleziono.",
+  "errors.METHOD_NOT_ALLOWED": "Niedozwolona metoda.",
+  "errors.HTTP_ERROR": "Błąd żądania.",
+  "errors.DATABASE_UNAVAILABLE": "Baza danych jest niedostępna.",
+  "errors.INTERNAL_SERVER_ERROR": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie."
+}

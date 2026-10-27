@@ -1,0 +1,10 @@
+{
+  "errors.VALIDATION_ERROR": "Some form fields are invalid.",
+  "errors.UNAUTHENTICATED": "Sign in to continue.",
+  "errors.FORBIDDEN": "You do not have permission to do this.",
+  "errors.NOT_FOUND": "Not found.",
+  "errors.METHOD_NOT_ALLOWED": "Method not allowed.",
+  "errors.HTTP_ERROR": "Request error.",
+  "errors.DATABASE_UNAVAILABLE": "The database is unavailable.",
+  "errors.INTERNAL_SERVER_ERROR": "Something went wrong. Please try again."
+}

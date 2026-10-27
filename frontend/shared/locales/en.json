@@ -1,0 +1,9 @@
+{
+  "app.name": "DoDomuDojadę",
+  "panel.title": "Admin panel",
+  "panel.under_construction": "The panel is under construction.",
+  "panel.language": "Language",
+  "status.api": "Server connection",
+  "status.ok": "working",
+  "status.error": "unavailable"
+}
