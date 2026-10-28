@@ -1,5 +1,10 @@
 const ROTATOR_MODULES = ["countdown", "quote", "word", "calendar"];
-const SLIDE_SECONDS = 10;
+// Each slide stays up long enough to read it from across the room:
+// a base time plus time per character, clamped to a sensible range.
+const SLIDE_BASE_SECONDS = 4;
+const SLIDE_CHARS_PER_SECOND = 12;
+const SLIDE_MIN_SECONDS = 10;
+const SLIDE_MAX_SECONDS = 45;
 const ANNOUNCEMENT_SECONDS = 8;
 const RECONNECT_DELAY_MS = 5_000;
 const FALLBACK_POLL_AFTER_MS = 30_000;
@@ -40,6 +45,25 @@ function timeOfDay(iso) {
   return new Date(iso).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
 }
 
+function slideText(slide) {
+  const d = slide.data ?? {};
+  switch (slide.type) {
+    case "quote":
+      return `${d.text ?? ""} ${d.author ?? ""}`;
+    case "word":
+      return `${d.word ?? ""} ${d.definition ?? ""}`;
+    case "event":
+      return `${d.summary ?? ""} ${d.description ?? ""}`;
+    default:
+      return "";
+  }
+}
+
+function slideSeconds(slide) {
+  const reading = SLIDE_BASE_SECONDS + slideText(slide).trim().length / SLIDE_CHARS_PER_SECOND;
+  return Math.min(SLIDE_MAX_SECONDS, Math.max(SLIDE_MIN_SECONDS, Math.ceil(reading)));
+}
+
 document.addEventListener("alpine:init", () => {
   window.Alpine.data("screen", () => ({
     modules: {},
@@ -50,6 +74,7 @@ document.addEventListener("alpine:init", () => {
     gridHeight: 0,
     maxRows: 50,
     slideIndex: 0,
+    slideElapsed: 0,
     announcementIndex: 0,
     countdownText: "",
     disconnectedSince: null,
@@ -126,8 +151,12 @@ document.addEventListener("alpine:init", () => {
 
     advance() {
       const seconds = Math.floor(Date.now() / 1000);
-      if (seconds % SLIDE_SECONDS === 0) {
-        this.slideIndex = this.slides.length ? (this.slideIndex + 1) % this.slides.length : 0;
+      const slides = this.slides;
+      const current = slides[this.slideIndex];
+      this.slideElapsed += 1;
+      if (!current || this.slideElapsed >= slideSeconds(current)) {
+        this.slideIndex = slides.length ? (this.slideIndex + 1) % slides.length : 0;
+        this.slideElapsed = 0;
       }
       if (seconds % ANNOUNCEMENT_SECONDS === 0) {
         const count = this.announcements.length;

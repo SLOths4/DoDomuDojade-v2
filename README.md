@@ -84,6 +84,8 @@ Każdy moduł zwraca `{"status": "active"|"empty"|"inactive", "data", "message"}
 
 Strumień `GET /api/display/stream` (SSE) wysyła `event: snapshot` z wszystkimi modułami po połączeniu i co minutę, a `event: module` (`{"name", "status", "data", "message"}`) gdy zmieni się pojedynczy moduł. Ostatnie wyniki pogody i kalendarza są trzymane w bazie, więc po restarcie ekran od razu ma dane.
 
+Rotator na ekranie (odliczanie, cytat, słowo dnia, wydarzenia z kalendarza) trzyma każdy slajd tyle, ile trzeba na przeczytanie: 4 s + 1 s na każde 12 znaków tekstu (cytat z autorem, słowo z definicją, tytuł wydarzenia z opisem), nie krócej niż 10 s i nie dłużej niż 45 s. Odliczanie ma zawsze 10 s. Stałe są na początku `frontend/display/display.js`.
+
 Dane ZTM: źródło ZTM Poznań (otwarte dane), przetworzone. Cytaty i słowa z projektów Wikimedia na licencji CC BY-SA — ekran podaje źródło.
 
 ## Struktura
