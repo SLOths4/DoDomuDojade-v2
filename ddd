@@ -13,9 +13,11 @@ Użycie: ./ddd <polecenie>
   up                 buduje i uruchamia aplikację w tle
   down               zatrzymuje aplikację
   restart            restartuje aplikację
-  logs [usługa]      pokazuje logi (api, web, db)
+  update             pobiera najnowszą wersję z GitHuba i uruchamia ją ponownie
+  logs [usługa]      pokazuje logi na bieżąco (api, web, db); wyjście: Ctrl+C
   ps                 stan kontenerów
   migrate            aktualizuje schemat bazy
+  fetch              od razu pobiera dane ekranu (rozkład, pogoda, kalendarz, cytat, słowo)
   user add <login>   dodaje użytkownika (hasło zostanie zapytane; --role admin|moderator)
   cleanup            usuwa stare odrzucone ogłoszenia i stary dziennik zdarzeń
   backup             zrzut bazy do katalogu backups/
@@ -37,11 +39,16 @@ case "$cmd" in
     ;;
   down) compose down ;;
   restart) compose restart ;;
+  update)
+    git pull --ff-only
+    compose up -d --build --wait
+    ;;
   logs) compose logs -f --tail=100 "$@" ;;
   ps) compose ps ;;
   migrate) app_cli migrate ;;
   user) app_cli user "$@" ;;
   cleanup) app_cli cleanup ;;
+  fetch) app_cli fetch ;;
   backup)
     mkdir -p backups
     file="backups/dodomudojade-$(date +%Y%m%d-%H%M%S).sql"

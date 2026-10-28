@@ -35,6 +35,7 @@ Plik konta serwisowego Google wrzuć do katalogu `secrets/` jako `google-service
 | Polecenie | Działanie |
 |---|---|
 | `./ddd up` / `./ddd down` / `./ddd restart` | start, zatrzymanie, restart |
+| `./ddd update` | pobiera najnowszą wersję z GitHuba i uruchamia ją ponownie |
 | `./ddd logs [api\|web\|db]` | logi |
 | `./ddd ps` | stan kontenerów |
 | `./ddd migrate` | aktualizacja schematu bazy |
