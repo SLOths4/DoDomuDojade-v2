@@ -70,3 +70,79 @@
         @apply border-red-500 bg-red-100 text-red-600;
     }
 }
+
+/* Panel: one set of components used on every page. */
+@layer components {
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50;
+    }
+    .btn-primary {
+        @apply bg-primary text-white hover:bg-primary-300;
+    }
+    .btn-secondary {
+        @apply border border-gray-300 bg-white text-gray-800 hover:bg-gray-50;
+    }
+    .btn-danger {
+        @apply bg-red-600 text-white hover:bg-red-700;
+    }
+    .btn-success {
+        @apply bg-green-600 text-white hover:bg-green-700;
+    }
+    .btn-sm {
+        @apply px-2 py-1 text-xs;
+    }
+    .field {
+        @apply flex flex-col gap-1;
+    }
+    .label {
+        @apply text-sm font-semibold text-gray-700;
+    }
+    .input {
+        @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-200;
+    }
+    .input-invalid {
+        @apply border-red-500 focus:border-red-500 focus:ring-red-200;
+    }
+    .field-error {
+        @apply text-xs text-red-600;
+    }
+    .hint {
+        @apply text-xs text-gray-500;
+    }
+    .card {
+        @apply rounded-xl bg-white p-4 shadow-custom sm:p-6;
+    }
+    .table {
+        @apply w-full text-left text-sm;
+    }
+    .table th {
+        @apply border-b border-gray-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500;
+    }
+    .table td {
+        @apply border-b border-gray-100 px-3 py-2 align-top;
+    }
+    .badge {
+        @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold;
+    }
+    .badge-pending {
+        @apply bg-amber-100 text-amber-800;
+    }
+    .badge-approved {
+        @apply bg-green-100 text-green-800;
+    }
+    .badge-rejected {
+        @apply bg-red-100 text-red-800;
+    }
+    .badge-muted {
+        @apply bg-gray-100 text-gray-600;
+    }
+    .alert {
+        @apply rounded-lg border px-3 py-2 text-sm;
+    }
+    .alert-error {
+        @apply border-red-300 bg-red-50 text-red-700;
+    }
+    .alert-info {
+        @apply border-primary-200 bg-primary-100/20 text-primary-400;
+    }
+}

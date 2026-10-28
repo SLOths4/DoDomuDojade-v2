@@ -1,7 +1,7 @@
 const SUPPORTED = ["pl", "en"];
 const STORAGE_KEY = "ddd.locale";
 
-function preferredLocale() {
+export function preferredLocale() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (SUPPORTED.includes(saved)) return saved;
@@ -13,14 +13,11 @@ function preferredLocale() {
 }
 
 export async function loadMessages(locale = preferredLocale()) {
-  const response = await fetch(`/shared/locales/${locale}.json`);
+  const chosen = SUPPORTED.includes(locale) ? locale : "pl";
+  const response = await fetch(`/shared/locales/${chosen}.json`);
   const messages = await response.json();
-  document.documentElement.lang = locale;
-  return {
-    locale,
-    t: (key, params = {}) =>
-      (messages[key] ?? key).replace(/\{(\w+)\}/g, (_, name) => params[name] ?? `{${name}}`),
-  };
+  document.documentElement.lang = chosen;
+  return { locale: chosen, messages };
 }
 
 export function saveLocale(locale) {

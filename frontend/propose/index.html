@@ -1,1 +1,57 @@
-<!doctype html><title>placeholder</title>
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DoDomuDojadę — zaproponuj ogłoszenie</title>
+  <link rel="icon" type="image/png" href="/shared/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="/shared/styles.css">
+  <script type="module" src="./propose.js"></script>
+  <script defer src="/shared/vendor/alpine.min.js"></script>
+</head>
+<body class="min-h-screen bg-beige font-sans text-gray-900">
+  <main x-data="proposeForm" class="flex min-h-screen items-center justify-center p-4">
+    <div class="card w-full max-w-lg space-y-4" x-show="$store.session.ready" x-cloak>
+      <div class="flex items-center gap-3">
+        <img src="/shared/img/logo.png" alt="" class="h-10 w-10">
+        <h1 class="text-xl font-bold text-primary" x-text="t('propose.title')"></h1>
+      </div>
+
+      <template x-if="sent">
+        <div class="space-y-4">
+          <p class="alert alert-info" x-text="t('propose.sent')" role="status"></p>
+          <button class="btn btn-secondary" @click="sent = false" x-text="t('propose.another')"></button>
+        </div>
+      </template>
+
+      <template x-if="!sent && $store.session.ready">
+        <form @submit.prevent="send()" class="space-y-4" novalidate>
+          <p class="text-sm text-gray-600" x-text="t('propose.intro')"></p>
+          <p x-show="formError" class="alert alert-error" x-text="formError" role="alert"></p>
+          <div class="field">
+            <label for="proposal-title" class="label" x-text="t('announcements.field_title')"></label>
+            <input id="proposal-title" class="input" :class="errors.title && 'input-invalid'" x-model="title" :maxlength="limits.title.max" required>
+            <p class="field-error" x-show="errors.title" x-text="errors.title"></p>
+          </div>
+          <div class="field">
+            <label for="proposal-text" class="label" x-text="t('announcements.field_text')"></label>
+            <textarea id="proposal-text" rows="5" class="input" :class="errors.text && 'input-invalid'" x-model="text" :maxlength="limits.text.max" required></textarea>
+            <p class="field-error" x-show="errors.text" x-text="errors.text"></p>
+          </div>
+          <div class="field">
+            <label for="proposal-valid-until" class="label" x-text="t('announcements.valid_until')"></label>
+            <input id="proposal-valid-until" type="date" class="input" :class="errors.validUntil && 'input-invalid'" x-model="validUntil">
+            <p class="hint" x-text="t('propose.valid_until_hint', { days: $store.session.config.announcement.proposalDefaultValidDays })"></p>
+            <p class="field-error" x-show="errors.validUntil" x-text="errors.validUntil"></p>
+          </div>
+          <button class="btn btn-primary w-full" :disabled="busy" x-text="t('propose.submit')"></button>
+        </form>
+      </template>
+    </div>
+  </main>
+</body>
+</html>

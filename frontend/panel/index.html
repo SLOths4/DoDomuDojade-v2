@@ -4,29 +4,472 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DoDomuDojadę — panel</title>
+  <link rel="icon" type="image/png" href="/shared/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="/shared/styles.css">
   <script type="module" src="./panel.js"></script>
   <script defer src="/shared/vendor/alpine.min.js"></script>
 </head>
-<body class="min-h-screen bg-beige font-sans text-gray-900">
-  <div x-data="panelShell" x-cloak class="mx-auto max-w-3xl p-6 space-y-6">
-    <header class="flex flex-wrap items-center justify-between gap-4">
-      <h1 class="text-2xl font-bold text-primary" x-text="t('panel.title')"></h1>
-      <label class="flex items-center gap-2 text-sm">
-        <span x-text="t('panel.language')"></span>
-        <select id="locale" x-model="locale" @change="switchLocale()" class="rounded border border-gray-300 bg-white px-2 py-1">
-          <option value="pl">Polski</option>
-          <option value="en">English</option>
-        </select>
-      </label>
-    </header>
-    <section class="rounded-xl bg-white p-6 shadow-custom space-y-2">
-      <p x-text="t('panel.under_construction')"></p>
-      <p class="text-sm text-gray-600">
-        <span x-text="t('status.api')"></span>:
-        <span :class="apiOk ? 'text-green-700' : 'text-red-700'" x-text="t(apiOk ? 'status.ok' : 'status.error')"></span>
-      </p>
-    </section>
+<body x-data="panelApp" @signed-in="signedIn($event.detail)" class="min-h-screen bg-beige font-sans text-gray-900">
+
+  <div x-show="loading" class="flex min-h-screen items-center justify-center text-gray-500">
+    <i class="fa-solid fa-spinner fa-spin mr-2" aria-hidden="true"></i> Ładowanie…
   </div>
+
+  <!-- Sign in -->
+  <template x-if="!loading && !$store.session.user">
+    <main class="flex min-h-screen items-center justify-center p-4">
+      <form x-data="loginForm" @submit.prevent="login()" class="card w-full max-w-sm space-y-4" novalidate>
+        <div class="flex items-center gap-3">
+          <img src="/shared/img/logo.png" alt="" class="h-10 w-10">
+          <h1 class="text-xl font-bold text-primary" x-text="t('login.title')"></h1>
+        </div>
+        <p x-show="formError" class="alert alert-error" x-text="formError" role="alert"></p>
+        <div class="field">
+          <label for="login-username" class="label" x-text="t('login.username')"></label>
+          <input id="login-username" class="input" x-model="username" autocomplete="username" required autofocus>
+        </div>
+        <div class="field">
+          <label for="login-password" class="label" x-text="t('login.password')"></label>
+          <input id="login-password" type="password" class="input" x-model="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn btn-primary w-full" :disabled="busy || !username || !password" x-text="t('login.submit')"></button>
+      </form>
+    </main>
+  </template>
+
+  <!-- Forced password change -->
+  <template x-if="!loading && $store.session.user?.mustChangePassword">
+    <main class="flex min-h-screen items-center justify-center p-4">
+      <div class="card w-full max-w-sm space-y-4">
+        <h1 class="text-xl font-bold text-primary" x-text="t('password.title')"></h1>
+        <p class="alert alert-info" x-text="t('password.forced')"></p>
+        <div x-html="document.getElementById('password-form').innerHTML"></div>
+        <button class="btn btn-secondary w-full" @click="logout()" x-text="t('nav.logout')"></button>
+      </div>
+    </main>
+  </template>
+
+  <!-- Panel -->
+  <template x-if="!loading && $store.session.user && !$store.session.user.mustChangePassword">
+    <div>
+      <header class="bg-white shadow-custom">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <a href="#announcements" class="flex items-center gap-2 font-bold text-primary">
+            <img src="/shared/img/logo.png" alt="" class="h-8 w-8">
+            <span x-text="t('app.name')"></span>
+          </a>
+          <button class="btn btn-secondary md:hidden" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen">
+            <i class="fa-solid fa-bars" aria-hidden="true"></i> <span x-text="t('nav.menu')"></span>
+          </button>
+          <nav class="w-full md:flex md:w-auto md:items-center md:gap-1" :class="menuOpen ? 'flex flex-col gap-1' : 'hidden'">
+            <template x-for="name in views" :key="name">
+              <a :href="`#${name}`" class="rounded-lg px-3 py-2 text-sm font-semibold"
+                 :class="view === name ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'"
+                 :aria-current="view === name ? 'page' : null" x-text="t(`nav.${name}`)"></a>
+            </template>
+            <a href="/display/" target="_blank" class="rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <i class="fa-solid fa-display" aria-hidden="true"></i> <span x-text="t('nav.display')"></span>
+            </a>
+            <button class="rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100" @click="logout()">
+              <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+              <span x-text="`${t('nav.logout')} (${$store.session.user.username})`"></span>
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="mx-auto max-w-6xl space-y-6 p-4">
+
+        <!-- Announcements -->
+        <template x-if="view === 'announcements'">
+          <div x-data="announcementsView" class="space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h1 class="text-2xl font-bold" x-text="t('announcements.title')"></h1>
+              <button class="btn btn-primary" @click="openNew()"><i class="fa-solid fa-plus" aria-hidden="true"></i> <span x-text="t('announcements.add')"></span></button>
+            </div>
+
+            <section class="card space-y-3">
+              <h2 class="text-lg font-bold">
+                <span x-text="t('announcements.pending')"></span>
+                <span class="badge badge-pending ml-1" x-show="pending.length" x-text="pending.length"></span>
+              </h2>
+              <p x-show="loaded && !pending.length" class="hint" x-text="t('announcements.no_pending')"></p>
+              <template x-for="a in pending" :key="a.id">
+                <article class="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="min-w-0 space-y-1">
+                    <h3 class="font-bold" x-text="a.title"></h3>
+                    <p class="whitespace-pre-line text-sm" x-text="a.text"></p>
+                    <p class="hint">
+                      <span x-text="`${t('announcements.valid_until')}: ${$store.session.formatDate(a.validUntil)}`"></span> ·
+                      <span x-text="a.author?.username ?? t('announcements.proposal')"></span>
+                    </p>
+                  </div>
+                  <div class="flex shrink-0 flex-wrap gap-2">
+                    <button class="btn btn-success btn-sm" @click="decide(a, 'approve')"><i class="fa-solid fa-check" aria-hidden="true"></i> <span x-text="t('announcements.approve')"></span></button>
+                    <button class="btn btn-secondary btn-sm" @click="decide(a, 'reject')"><i class="fa-solid fa-xmark" aria-hidden="true"></i> <span x-text="t('announcements.reject')"></span></button>
+                    <button class="btn btn-secondary btn-sm" @click="openEdit(a)" x-text="t('common.edit')"></button>
+                  </div>
+                </article>
+              </template>
+            </section>
+
+            <section class="card space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-bold" x-text="t('announcements.others')"></h2>
+                <label class="flex items-center gap-2 text-sm">
+                  <span x-text="t('announcements.filter')"></span>
+                  <select id="announcement-filter" class="input w-auto" x-model="filter">
+                    <option value="all" x-text="t('announcements.filter_all')"></option>
+                    <option value="visible" x-text="t('announcements.filter_visible')"></option>
+                  </select>
+                </label>
+              </div>
+              <p x-show="!loaded" class="hint" x-text="t('common.loading')"></p>
+              <p x-show="loaded && !decided.length" class="hint" x-text="t('announcements.empty')"></p>
+              <div class="overflow-x-auto" x-show="decided.length">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th x-text="t('announcements.field_title')"></th>
+                      <th x-text="t('announcements.status')"></th>
+                      <th x-text="t('announcements.valid_until')"></th>
+                      <th x-text="t('announcements.author')"></th>
+                      <th x-text="t('announcements.decided_by')"></th>
+                      <th class="text-right" x-text="t('common.actions')"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="a in decided" :key="a.id">
+                      <tr>
+                        <td class="max-w-xs">
+                          <p class="font-semibold" x-text="a.title"></p>
+                          <p class="hint line-clamp-2" x-text="a.text"></p>
+                        </td>
+                        <td>
+                          <span class="badge" :class="`badge-${a.status}`" x-text="t(`status.${a.status}`)"></span>
+                          <span class="badge badge-muted" x-show="isExpired(a)" x-text="t('announcements.expired')"></span>
+                        </td>
+                        <td class="whitespace-nowrap" x-text="$store.session.formatDate(a.validUntil)"></td>
+                        <td x-text="a.author?.username ?? t('announcements.proposal')"></td>
+                        <td class="whitespace-nowrap">
+                          <span x-text="a.decidedBy?.username ?? '—'"></span>
+                          <span class="hint block" x-text="$store.session.formatDateTime(a.decidedAt)"></span>
+                        </td>
+                        <td class="whitespace-nowrap text-right">
+                          <button class="btn btn-secondary btn-sm" x-show="a.status === 'approved'" @click="decide(a, 'reject')" x-text="t('announcements.reject')"></button>
+                          <button class="btn btn-secondary btn-sm" x-show="a.status === 'rejected'" @click="decide(a, 'approve')" x-text="t('announcements.approve')"></button>
+                          <button class="btn btn-secondary btn-sm" @click="openEdit(a)" :aria-label="t('common.edit')"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                          <button class="btn btn-danger btn-sm" @click="remove(a)" :aria-label="t('common.delete')"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <template x-if="editor">
+              <div class="fixed inset-0 z-20 flex items-center justify-center bg-black/40 p-4" @keydown.escape.window="editor = null">
+                <form x-data="form" @submit.prevent="save($data)" class="card max-h-full w-full max-w-lg space-y-4 overflow-y-auto" novalidate>
+                  <h2 class="text-lg font-bold" x-text="t(editor.id ? 'announcements.edit' : 'announcements.add')"></h2>
+                  <p x-show="formError" class="alert alert-error" x-text="formError" role="alert"></p>
+                  <div class="field">
+                    <label for="announcement-title" class="label" x-text="t('announcements.field_title')"></label>
+                    <input id="announcement-title" class="input" :class="errors.title && 'input-invalid'" x-model="editor.title" :maxlength="limits.title.max" required>
+                    <p class="field-error" x-show="errors.title" x-text="errors.title"></p>
+                  </div>
+                  <div class="field">
+                    <label for="announcement-text" class="label" x-text="t('announcements.field_text')"></label>
+                    <textarea id="announcement-text" rows="5" class="input" :class="errors.text && 'input-invalid'" x-model="editor.text" :maxlength="limits.text.max" required></textarea>
+                    <p class="field-error" x-show="errors.text" x-text="errors.text"></p>
+                  </div>
+                  <div class="field">
+                    <label for="announcement-valid-until" class="label" x-text="t('announcements.valid_until')"></label>
+                    <input id="announcement-valid-until" type="date" class="input" :class="errors.validUntil && 'input-invalid'" x-model="editor.validUntil" required>
+                    <p class="field-error" x-show="errors.validUntil" x-text="errors.validUntil"></p>
+                  </div>
+                  <div class="flex justify-end gap-2">
+                    <button type="button" class="btn btn-secondary" @click="editor = null" x-text="t('common.cancel')"></button>
+                    <button class="btn btn-primary" :disabled="busy" x-text="t('common.save')"></button>
+                  </div>
+                </form>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Countdowns -->
+        <template x-if="view === 'countdowns'">
+          <div x-data="countdownsView" class="space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h1 class="text-2xl font-bold" x-text="t('countdowns.title')"></h1>
+              <button class="btn btn-primary" @click="openNew()"><i class="fa-solid fa-plus" aria-hidden="true"></i> <span x-text="t('countdowns.add')"></span></button>
+            </div>
+            <section class="card">
+              <p x-show="!loaded" class="hint" x-text="t('common.loading')"></p>
+              <p x-show="loaded && !items.length" class="hint" x-text="t('countdowns.empty')"></p>
+              <div class="overflow-x-auto" x-show="items.length">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th x-text="t('countdowns.field_title')"></th>
+                      <th x-text="t('countdowns.count_to')"></th>
+                      <th x-text="t('announcements.author')"></th>
+                      <th class="text-right" x-text="t('common.actions')"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="c in items" :key="c.id">
+                      <tr :class="isPast(c) && 'text-gray-400'">
+                        <td>
+                          <span class="font-semibold" x-text="c.title"></span>
+                          <span class="badge badge-approved ml-1" x-show="c.id === shownId" x-text="t('countdowns.shown')"></span>
+                          <span class="badge badge-muted ml-1" x-show="isPast(c)" x-text="t('countdowns.past')"></span>
+                        </td>
+                        <td class="whitespace-nowrap" x-text="$store.session.formatDateTime(c.countTo)"></td>
+                        <td x-text="c.author?.username ?? '—'"></td>
+                        <td class="whitespace-nowrap text-right">
+                          <button class="btn btn-secondary btn-sm" @click="openEdit(c)" :aria-label="t('common.edit')"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                          <button class="btn btn-danger btn-sm" @click="remove(c)" :aria-label="t('common.delete')"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <template x-if="editor">
+              <div class="fixed inset-0 z-20 flex items-center justify-center bg-black/40 p-4" @keydown.escape.window="editor = null">
+                <form x-data="form" @submit.prevent="save($data)" class="card w-full max-w-lg space-y-4" novalidate>
+                  <h2 class="text-lg font-bold" x-text="t(editor.id ? 'countdowns.edit' : 'countdowns.add')"></h2>
+                  <p x-show="formError" class="alert alert-error" x-text="formError" role="alert"></p>
+                  <div class="field">
+                    <label for="countdown-title" class="label" x-text="t('countdowns.field_title')"></label>
+                    <input id="countdown-title" class="input" :class="errors.title && 'input-invalid'" x-model="editor.title" :maxlength="limits.title.max" required>
+                    <p class="hint" x-text="t('countdowns.field_title_hint', { example: editor.title || 'ferii zimowych' })"></p>
+                    <p class="field-error" x-show="errors.title" x-text="errors.title"></p>
+                  </div>
+                  <div class="field">
+                    <label for="countdown-count-to" class="label" x-text="t('countdowns.count_to')"></label>
+                    <input id="countdown-count-to" type="datetime-local" class="input" :class="errors.countTo && 'input-invalid'" x-model="editor.countTo" required>
+                    <p class="field-error" x-show="errors.countTo" x-text="errors.countTo"></p>
+                  </div>
+                  <div class="flex justify-end gap-2">
+                    <button type="button" class="btn btn-secondary" @click="editor = null" x-text="t('common.cancel')"></button>
+                    <button class="btn btn-primary" :disabled="busy" x-text="t('common.save')"></button>
+                  </div>
+                </form>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Modules -->
+        <template x-if="view === 'modules'">
+          <div x-data="modulesView" class="space-y-6">
+            <h1 class="text-2xl font-bold" x-text="t('modules.title')"></h1>
+            <p class="max-w-3xl text-sm text-gray-600" x-text="t('modules.intro')"></p>
+            <section class="card">
+              <p x-show="!loaded" class="hint" x-text="t('common.loading')"></p>
+              <div class="divide-y divide-gray-100">
+                <template x-for="m in items" :key="m.id">
+                  <form x-data="form" @submit.prevent="save(m, $data)" class="flex flex-wrap items-end gap-4 py-3">
+                    <div class="w-40 font-semibold" x-text="t(`modules.name.${m.name}`)"></div>
+                    <label class="flex items-center gap-2 text-sm">
+                      <input type="checkbox" :id="`module-active-${m.id}`" class="h-4 w-4 accent-primary" x-model="m.isActive">
+                      <span x-text="t('modules.active')"></span>
+                    </label>
+                    <div class="field">
+                      <label :for="`module-start-${m.id}`" class="label" x-text="t('modules.start')"></label>
+                      <input :id="`module-start-${m.id}`" type="time" class="input w-32" x-model="m.startTime" required>
+                    </div>
+                    <div class="field">
+                      <label :for="`module-end-${m.id}`" class="label" x-text="t('modules.end')"></label>
+                      <input :id="`module-end-${m.id}`" type="time" class="input w-32" x-model="m.endTime" required>
+                    </div>
+                    <span class="hint pb-2" x-show="m.startTime === m.endTime" x-text="t('modules.whole_day')"></span>
+                    <button class="btn btn-primary btn-sm mb-1" :disabled="busy" x-text="t('common.save')"></button>
+                    <p class="field-error w-full" x-show="formError || Object.keys(errors).length" x-text="formError || t('validation.invalid')"></p>
+                  </form>
+                </template>
+              </div>
+            </section>
+          </div>
+        </template>
+
+        <!-- Users -->
+        <template x-if="view === 'users'">
+          <div x-data="usersView" class="space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h1 class="text-2xl font-bold" x-text="t('users.title')"></h1>
+              <button class="btn btn-primary" @click="openNew()"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> <span x-text="t('users.add')"></span></button>
+            </div>
+            <p class="text-sm text-gray-600" x-text="t('roles.help')"></p>
+            <section class="card">
+              <p x-show="!loaded" class="hint" x-text="t('common.loading')"></p>
+              <div class="overflow-x-auto" x-show="items.length">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th x-text="t('users.username')"></th>
+                      <th x-text="t('users.role')"></th>
+                      <th x-text="t('users.active')"></th>
+                      <th class="text-right" x-text="t('common.actions')"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="u in items" :key="u.id">
+                      <tr :class="!u.isActive && 'text-gray-400'">
+                        <td>
+                          <span class="font-semibold" x-text="u.username"></span>
+                          <span class="badge badge-muted ml-1" x-show="u.id === $store.session.user.id" x-text="t('users.you')"></span>
+                          <span class="badge badge-pending ml-1" x-show="u.mustChangePassword" x-text="t('users.must_change')"></span>
+                        </td>
+                        <td x-text="t(`roles.${u.role}`)"></td>
+                        <td x-text="u.isActive ? t('common.yes') : t('users.inactive')"></td>
+                        <td class="whitespace-nowrap text-right">
+                          <button class="btn btn-secondary btn-sm" @click="openEdit(u)" :aria-label="t('common.edit')"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                          <button class="btn btn-secondary btn-sm" @click="reset = { id: u.id, username: u.username, newPassword: '' }" :aria-label="t('users.reset_password')"><i class="fa-solid fa-key" aria-hidden="true"></i></button>
+                          <button class="btn btn-danger btn-sm" x-show="u.id !== $store.session.user.id" @click="remove(u)" :aria-label="t('common.delete')"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <template x-if="editor">
+              <div class="fixed inset-0 z-20 flex items-center justify-center bg-black/40 p-4" @keydown.escape.window="editor = null">
+                <form x-data="form" @submit.prevent="save($data)" class="card w-full max-w-md space-y-4" novalidate>
+                  <h2 class="text-lg font-bold" x-text="t(editor.id ? 'users.edit' : 'users.add')"></h2>
+                  <p x-show="formError" class="alert alert-error" x-text="formError" role="alert"></p>
+                  <div class="field">
+                    <label for="user-username" class="label" x-text="t('users.username')"></label>
+                    <input id="user-username" class="input" :class="errors.username && 'input-invalid'" x-model="editor.username" autocomplete="off" required>
+                    <p class="field-error" x-show="errors.username" x-text="errors.username"></p>
+                  </div>
+                  <div class="field" x-show="!editor.id">
+                    <label for="user-password" class="label" x-text="t('users.initial_password')"></label>
+                    <input id="user-password" type="text" class="input" :class="errors.password && 'input-invalid'" x-model="editor.password" autocomplete="off">
+                    <p class="hint" x-text="t('users.initial_password_hint')"></p>
+                    <p class="field-error" x-show="errors.password" x-text="errors.password"></p>
+                  </div>
+                  <div class="field">
+                    <label for="user-role" class="label" x-text="t('users.role')"></label>
+                    <select id="user-role" class="input" x-model="editor.role">
+                      <option value="moderator" x-text="t('roles.moderator')"></option>
+                      <option value="admin" x-text="t('roles.admin')"></option>
+                    </select>
+                  </div>
+                  <label class="flex items-center gap-2 text-sm" x-show="editor.id">
+                    <input id="user-active" type="checkbox" class="h-4 w-4 accent-primary" x-model="editor.isActive">
+                    <span x-text="t('users.active')"></span>
+                  </label>
+                  <div class="flex justify-end gap-2">
+                    <button type="button" class="btn btn-secondary" @click="editor = null" x-text="t('common.cancel')"></button>
+                    <button class="btn btn-primary" :disabled="busy" x-text="t('common.save')"></button>
+                  </div>
+                </form>
+              </div>
+            </template>
+
+            <template x-if="reset">
+              <div class="fixed inset-0 z-20 flex items-center justify-center bg-black/40 p-4" @keydown.escape.window="reset = null">
+                <form x-data="form" @submit.prevent="resetPassword($data)" class="card w-full max-w-md space-y-4" novalidate>
+                  <h2 class="text-lg font-bold" x-text="`${t('users.reset_password')}: ${reset.username}`"></h2>
+                  <p x-show="formError" class="alert alert-error" x-text="formError" role="alert"></p>
+                  <div class="field">
+                    <label for="reset-password" class="label" x-text="t('users.new_password')"></label>
+                    <input id="reset-password" type="text" class="input" :class="errors.newPassword && 'input-invalid'" x-model="reset.newPassword" autocomplete="off">
+                    <p class="hint" x-text="t('users.initial_password_hint')"></p>
+                    <p class="field-error" x-show="errors.newPassword" x-text="errors.newPassword"></p>
+                  </div>
+                  <div class="flex justify-end gap-2">
+                    <button type="button" class="btn btn-secondary" @click="reset = null" x-text="t('common.cancel')"></button>
+                    <button class="btn btn-primary" :disabled="busy" x-text="t('common.save')"></button>
+                  </div>
+                </form>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Profile -->
+        <template x-if="view === 'profile'">
+          <div class="space-y-6">
+            <h1 class="text-2xl font-bold" x-text="t('profile.title')"></h1>
+            <section class="card max-w-md space-y-4">
+              <p class="text-sm">
+                <span class="font-semibold" x-text="$store.session.user.username"></span> ·
+                <span x-text="t(`roles.${$store.session.user.role}`)"></span>
+              </p>
+              <div class="field">
+                <label for="profile-locale" class="label" x-text="t('profile.language')"></label>
+                <select id="profile-locale" class="input" :value="$store.session.locale" @change="$store.session.changeLocale($event.target.value)">
+                  <option value="pl">Polski</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+            </section>
+            <section class="card max-w-md space-y-4">
+              <h2 class="text-lg font-bold" x-text="t('profile.change_password')"></h2>
+              <div x-html="document.getElementById('password-form').innerHTML"></div>
+            </section>
+          </div>
+        </template>
+      </main>
+    </div>
+  </template>
+
+  <!-- Shared password form, rendered in the forced-change screen and in the profile. -->
+  <template id="password-form">
+    <form x-data="passwordForm" @submit.prevent="change()" class="space-y-4" novalidate>
+      <p x-show="formError" class="alert alert-error" x-text="formError" role="alert"></p>
+      <label class="field">
+        <span class="label" x-text="t('password.current')"></span>
+        <input type="password" class="input" :class="errors.currentPassword && 'input-invalid'" x-model="currentPassword" autocomplete="current-password" required>
+        <p class="field-error" x-show="errors.currentPassword" x-text="errors.currentPassword"></p>
+      </label>
+      <label class="field">
+        <span class="label" x-text="t('password.new')"></span>
+        <input type="password" class="input" :class="errors.newPassword && 'input-invalid'" x-model="newPassword" autocomplete="new-password" required>
+        <p class="hint" x-text="t('password.hint', { min: $store.session.config.password.minLength })"></p>
+        <p class="field-error" x-show="errors.newPassword" x-text="errors.newPassword"></p>
+      </label>
+      <label class="field">
+        <span class="label" x-text="t('password.repeat')"></span>
+        <input type="password" class="input" :class="errors.repeatPassword && 'input-invalid'" x-model="repeatPassword" autocomplete="new-password" required>
+        <p class="field-error" x-show="errors.repeatPassword" x-text="errors.repeatPassword"></p>
+      </label>
+      <button class="btn btn-primary w-full" :disabled="busy" x-text="t('password.submit')"></button>
+    </form>
+  </template>
+
+  <!-- Toasts -->
+  <div class="pointer-events-none fixed bottom-4 right-4 z-30 flex flex-col items-end gap-2" aria-live="polite">
+    <template x-for="toast in $store.ui.toasts" :key="toast.id">
+      <div class="pointer-events-auto rounded-lg px-4 py-2 text-sm text-white shadow-custom"
+           :class="toast.kind === 'error' ? 'bg-red-600' : 'bg-green-700'" x-text="toast.message"></div>
+    </template>
+  </div>
+
+  <!-- Confirmation dialog -->
+  <template x-if="$store.ui.confirmation">
+    <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" @keydown.escape.window="$store.ui.answer(false)">
+      <div class="card w-full max-w-sm space-y-4" role="alertdialog" aria-modal="true">
+        <p x-text="$store.ui.confirmation.message"></p>
+        <div class="flex justify-end gap-2">
+          <button class="btn btn-secondary" @click="$store.ui.answer(false)" x-text="t('common.cancel')"></button>
+          <button class="btn btn-danger" @click="$store.ui.answer(true)" x-text="$store.ui.confirmation.actionLabel" x-init="$el.focus()"></button>
+        </div>
+      </div>
+    </div>
+  </template>
 </body>
 </html>

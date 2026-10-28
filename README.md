@@ -4,7 +4,7 @@ Wirtualna tablica informacyjna szkoły: ekran z odjazdami autobusów i tramwajó
 
 To druga wersja projektu, przepisana z PHP na Pythona. Pierwsza wersja i plan migracji: [SLOths4/DoDomuDojade](https://github.com/SLOths4/DoDomuDojade) (`resources/docs/python-migration.md`).
 
-> **Stan:** etapy 1–3 backendu. Działa API panelu i ekranu, integracje i strumień SSE. Frontend ekranu i panelu powstaje w kolejnych etapach.
+> **Stan:** etapy 0–4 gotowe: API, integracje, ekran na żywo (SSE), panel administracyjny i formularz propozycji. Przed wdrożeniem zobacz [DEPLOY.md](DEPLOY.md).
 
 ## Uruchomienie
 
@@ -21,7 +21,8 @@ Aplikacja działa pod `http://localhost/` (port zmienisz w `HTTP_PORT`):
 | Adres | Co to jest |
 |---|---|
 | `/display/` | ekran (otwierany przez Firefoksa na Raspberry Pi) |
-| `/panel/` | panel administracyjny |
+| `/panel/` | panel administracyjny (po polsku lub angielsku) |
+| `/propose/` | publiczny formularz propozycji ogłoszenia |
 | `/api/docs` | dokumentacja API |
 | `/api/health` | stan aplikacji |
 
@@ -93,9 +94,10 @@ backend/            API: Python 3.13, FastAPI, SQLAlchemy 2, Alembic
   app/integrations/ ZTM (GTFS), pogoda, kalendarz, cytat i słowo dnia
   alembic/          migracje bazy
 frontend/           strony HTML + Alpine.js + Tailwind CSS, serwowane przez Caddy
-  display/          ekran
-  panel/            panel administracyjny
-  shared/           klient API, tłumaczenia (pl, en), style
+  display/          ekran (tylko po polsku)
+  panel/            panel administracyjny: jedna strona, widoki wybierane adresem (#announcements, #countdowns, …)
+  propose/          formularz propozycji ogłoszenia
+  shared/           klient API, wspólne komponenty (ui.js), tłumaczenia (pl, en), style
 docker-compose.yml  db (PostgreSQL 17), api, web (Caddy)
 ddd                 skrypt z poleceniami
 ```
