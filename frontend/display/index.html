@@ -3,18 +3,167 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DoDomuDojadę — ekran</title>
+  <title>DoDomuDojadę</title>
+  <link rel="icon" type="image/png" href="/shared/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="/shared/styles.css">
   <script type="module" src="./display.js"></script>
   <script defer src="/shared/vendor/alpine.min.js"></script>
 </head>
-<body class="h-screen overflow-hidden bg-beige font-sans text-gray-900">
-  <main class="flex h-full flex-col items-center justify-center gap-6" x-data="displayShell">
-    <p class="text-8xl font-bold tabular-nums text-primary" x-text="time"></p>
-    <p class="text-3xl" x-text="date"></p>
-    <p class="text-xl" :class="apiOk ? 'text-green-700' : 'text-red-700'">
-      Połączenie z serwerem: <span x-text="apiOk ? 'działa' : 'brak połączenia'"></span>
-    </p>
+<body x-data="screen" class="h-screen overflow-hidden bg-primary-200 font-sans text-gray-800">
+  <header x-ref="header" class="mx-1 my-2 flex">
+    <div class="flex h-20 flex-auto items-center justify-around rounded-2xl bg-white shadow-custom">
+      <img src="/shared/img/logo.png" alt="Logo szkoły" class="h-15 w-15 max-lg:h-10 max-lg:w-10 max-md:h-5 max-md:w-5">
+      <div class="d-head flex items-center gap-2 max-sm:hidden">
+        <i class="fa-solid fa-calendar text-primary-400" aria-hidden="true"></i>
+        <span x-text="date"></span>
+      </div>
+      <div class="d-head flex items-center gap-2 max-sm:hidden">
+        <i class="fa-solid fa-clock text-primary-400" aria-hidden="true"></i>
+        <span x-text="time" class="tabular-nums"></span>
+      </div>
+      <template x-if="modules.weather?.status === 'active'">
+        <div class="d-head flex items-center gap-2">
+          <i class="fa-solid fa-temperature-three-quarters" :style="`color: ${temperatureColour(modules.weather.data.temperature)}`" aria-hidden="true"></i>
+          <span x-text="modules.weather.data.temperature === null ? '—' : `${modules.weather.data.temperature}°C`"></span>
+        </div>
+      </template>
+      <template x-if="modules.weather?.status === 'active' && modules.weather.data.pressure !== null">
+        <div class="d-head flex items-center gap-2">
+          <i class="fa-solid fa-gauge text-primary-400" aria-hidden="true"></i>
+          <span x-text="`${modules.weather.data.pressure} hPa`"></span>
+        </div>
+      </template>
+      <template x-if="modules.weather?.status === 'active' && modules.weather.data.airQuality">
+        <div class="d-head flex items-center gap-2 max-lg:hidden" :title="modules.weather.data.airQuality.advice">
+          <i class="fa-solid fa-wind" :style="`color: ${modules.weather.data.airQuality.colour}`" aria-hidden="true"></i>
+          <span class="d-text" x-text="modules.weather.data.airQuality.description"></span>
+        </div>
+      </template>
+      <template x-if="modules.weather && modules.weather.status !== 'active'">
+        <div class="d-alert max-sm:hidden" :class="alertClass(modules.weather.status)">
+          <i class="fa-solid" :class="alertIcon(modules.weather.status)" aria-hidden="true"></i>
+          <span x-text="modules.weather.message"></span>
+        </div>
+      </template>
+    </div>
+  </header>
+
+  <main class="grid auto-cols-fr grid-flow-col gap-2 overflow-hidden px-1" :style="`height: ${gridHeight}px`">
+    <section x-ref="departures" class="overflow-hidden rounded-2xl bg-white px-1 py-2 shadow-custom">
+      <template x-if="!loaded">
+        <p class="d-card d-head m-2 text-center">Ładowanie...</p>
+      </template>
+      <template x-if="modules.departures?.status === 'active'">
+        <div>
+          <div class="grid w-full grid-cols-4 text-center">
+            <div class="d-text pb-2 font-bold text-primary-400"><i class="fa-solid fa-train-tram" aria-hidden="true"></i> Linia</div>
+            <div class="d-text col-span-2 pb-2 font-bold text-primary-400"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Kierunek</div>
+            <div class="d-text pb-2 font-bold text-primary-400"><i class="fa-solid fa-clock" aria-hidden="true"></i> Odjazd</div>
+          </div>
+          <template x-for="departure in visibleDepartures" :key="`${departure.line}-${departure.stopCode}-${departure.direction}-${departure.minutes}`">
+            <div data-row class="grid w-full grid-cols-4 text-center">
+              <div class="d-text border-t border-gray-200 py-2">
+                <span x-text="departure.line" class="inline-flex items-center justify-center font-bold" :class="lineBadge(departure)"></span>
+              </div>
+              <div class="d-text col-span-2 border-t border-gray-200 py-2" x-text="departure.direction"></div>
+              <div class="d-text border-t border-gray-200 py-2">
+                <span x-text="formatMinutes(departure.minutes)"></span>
+                <i x-show="departure.realtime" class="fa-solid fa-satellite-dish ml-1 text-sm text-primary-300" title="Czas na podstawie położenia pojazdu" aria-hidden="true"></i>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+      <template x-if="modules.departures && modules.departures.status !== 'active'">
+        <div class="d-alert" :class="alertClass(modules.departures.status)">
+          <i class="fa-solid" :class="alertIcon(modules.departures.status)" aria-hidden="true"></i>
+          <span x-text="modules.departures.message"></span>
+        </div>
+      </template>
+    </section>
+
+    <section class="flex flex-col overflow-hidden rounded-2xl bg-white px-2 py-2 shadow-custom">
+      <div class="py-2">
+        <template x-if="!loaded">
+          <p class="d-card d-head m-2 text-center text-gray-500">Ładowanie...</p>
+        </template>
+        <template x-for="(slide, index) in slides" :key="slide.key">
+          <div x-show="slideIndex === index" class="d-card m-2 mb-4">
+            <template x-if="slide.type === 'countdown'">
+              <p class="d-text text-center font-mono font-extrabold" x-text="countdownText"></p>
+            </template>
+            <template x-if="slide.type === 'quote'">
+              <div class="space-y-2 text-center">
+                <p class="d-text font-mono italic" x-text="slide.data.text"></p>
+                <p class="d-small mt-2 text-right text-gray-600">
+                  — <span x-text="slide.data.author"></span>
+                  <span class="text-gray-400" x-text="`(${slide.data.source})`"></span>
+                </p>
+              </div>
+            </template>
+            <template x-if="slide.type === 'word'">
+              <div class="space-y-2 text-center">
+                <p class="d-head italic" x-text="slide.data.word"></p>
+                <p class="d-small font-mono italic text-gray-600" x-text="slide.data.ipa" x-show="slide.data.ipa"></p>
+                <p class="d-text font-mono italic" x-text="slide.data.definition"></p>
+                <p class="d-small text-right text-gray-400" x-text="slide.data.source"></p>
+              </div>
+            </template>
+            <template x-if="slide.type === 'event'">
+              <div>
+                <div class="flex items-center justify-around text-center">
+                  <p class="px-2">
+                    <i class="fa-solid fa-calendar mr-1 text-primary-400" aria-hidden="true"></i>
+                    <span class="d-text font-bold" x-text="slide.data.summary"></span>
+                  </p>
+                  <p class="px-2">
+                    <i class="fa-solid fa-clock mr-1 text-primary-400" aria-hidden="true"></i>
+                    <span class="d-text font-bold" x-text="eventTime(slide.data)"></span>
+                  </p>
+                </div>
+                <p x-show="slide.data.description">
+                  <i class="fa-solid fa-align-justify mr-1 text-primary-400" aria-hidden="true"></i>
+                  <span class="d-text" x-text="slide.data.description"></span>
+                </p>
+              </div>
+            </template>
+          </div>
+        </template>
+        <template x-for="notice in rotatorNotices" :key="notice.name">
+          <div class="d-alert max-sm:hidden" :class="alertClass(notice.status)">
+            <i class="fa-solid" :class="alertIcon(notice.status)" aria-hidden="true"></i>
+            <span x-text="notice.message"></span>
+          </div>
+        </template>
+      </div>
+
+      <div class="overflow-hidden py-2">
+        <template x-for="(announcement, index) in announcements" :key="announcement.id">
+            <article x-show="announcementIndex === index" class="d-card mb-4">
+              <h3 class="d-text font-bold" x-text="announcement.title"></h3>
+              <p class="d-text whitespace-pre-line" x-text="announcement.text"></p>
+              <p class="d-small mt-1 text-gray-600" x-show="announcement.author">
+                <i class="fa-solid fa-user pl-2 text-primary-400" aria-hidden="true"></i>
+                <span x-text="announcement.author"></span>
+              </p>
+            </article>
+        </template>
+        <template x-if="modules.announcement && modules.announcement.status !== 'active'">
+          <div class="d-alert" :class="alertClass(modules.announcement.status)">
+            <i class="fa-solid" :class="alertIcon(modules.announcement.status)" aria-hidden="true"></i>
+            <span x-text="modules.announcement.message"></span>
+          </div>
+        </template>
+      </div>
+    </section>
   </main>
+
+  <div x-show="!connected && loaded" x-cloak class="fixed bottom-2 right-2 rounded-full bg-white/80 px-3 py-1 text-sm text-gray-500 shadow-custom">
+    <i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i> Ponowne łączenie…
+  </div>
 </body>
 </html>

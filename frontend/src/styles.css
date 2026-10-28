@@ -35,12 +35,38 @@
     --color-19: #42B6AE;
 }
 
-@layer utilities {
-    .shadow-custom {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
+@utility shadow-custom {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 [x-cloak] {
     display: none !important;
+}
+
+/* Display screen: text scales with the TV / browser width, as in version 1. */
+@layer components {
+    .d-text {
+        @apply text-2xl max-2xl:text-xl max-xl:text-lg max-lg:text-base max-md:text-sm max-sm:text-xs;
+    }
+    .d-small {
+        @apply text-lg max-xl:text-base max-lg:text-sm max-md:text-xs max-sm:text-[10px];
+    }
+    .d-head {
+        @apply font-mono text-3xl font-extrabold max-2xl:text-2xl max-xl:text-xl max-lg:text-lg max-md:text-base max-sm:text-sm;
+    }
+    .d-card {
+        @apply rounded-2xl bg-beige p-2 shadow-custom;
+    }
+    .d-alert {
+        @apply mx-2 mt-2 flex items-center gap-2 rounded-lg border p-2 text-base font-medium max-lg:text-sm max-md:text-xs;
+    }
+    .d-alert-empty {
+        @apply border-yellow-500 bg-amber-100 text-yellow-700;
+    }
+    .d-alert-inactive {
+        @apply border-slate-500 bg-slate-100 text-slate-600;
+    }
+    .d-alert-error {
+        @apply border-red-500 bg-red-100 text-red-600;
+    }
 }

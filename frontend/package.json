@@ -2,11 +2,12 @@
   "name": "dodomudojade-frontend",
   "version": "2.0.0-dev",
   "scripts": {
-    "build": "rm -rf dist && mkdir -p dist/shared/vendor && cp -R index.html display panel shared dist/ && cp node_modules/alpinejs/dist/cdn.min.js dist/shared/vendor/alpine.min.js && tailwindcss -i src/styles.css -o dist/shared/styles.css --minify"
+    "build": "rm -rf dist && mkdir -p dist/shared/vendor/fontawesome && cp -R index.html display panel propose shared dist/ && cp node_modules/alpinejs/dist/cdn.min.js dist/shared/vendor/alpine.min.js && cp -R node_modules/@fortawesome/fontawesome-free/css node_modules/@fortawesome/fontawesome-free/webfonts dist/shared/vendor/fontawesome/ && tailwindcss -i src/styles.css -o dist/shared/styles.css --minify"
   },
   "license": "CC-BY-NC-4.0",
   "private": true,
   "dependencies": {
+    "@fortawesome/fontawesome-free": "6.7.2",
     "alpinejs": "3.15.12"
   },
   "devDependencies": {
