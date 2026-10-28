@@ -1,0 +1,9 @@
+{{Słowo dnia
+|hasło=nieboskłon
+|data=2026/10/28
+|znaczenie=<br>
+''rzeczownik, rodzaj męskorzeczowy''
+: (1.1) {{książk}} [[kopuła]] [[niebo|nieba]], [[zwłaszcza]] [[jej]] [[dolny|dolna]] [[część]]
+|wymowa={{IPA3|ɲɛˈbɔskwɔ̃n}}
+|grafika1=Fisheye sunset.jpg
+}}

@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     session_max_age_days: int = 7
     scheduler_enabled: bool = True
 
+    data_dir: str = "data"
+
     stop_name: str = "AWF"
     stop_codes: str = ""
 

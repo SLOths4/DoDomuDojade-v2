@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.core.db import get_sessionmaker
 from app.core.security import MIN_PASSWORD_LENGTH, hash_password
+from app.display.jobs import refresh_all
 from app.maintenance import cleanup as cleanup_db
 from app.users.models import Role, User
 
@@ -33,6 +34,13 @@ def cleanup() -> None:
         f"Usunięto odrzucone ogłoszenia: {result['rejected_announcements']}, "
         f"zdarzenia: {result['events']}."
     )
+
+
+@app.command()
+def fetch() -> None:
+    """Pobiera od razu rozkład, pogodę, kalendarz oraz cytat i słowo dnia."""
+    refresh_all()
+    typer.echo("Pobrano dane ekranu.")
 
 
 @user_app.command("add")

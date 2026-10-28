@@ -13,6 +13,7 @@ from app.core.errors import register_error_handlers, request_id_middleware
 from app.core.events import broker
 from app.core.scheduler import create_scheduler
 from app.countdowns.router import router as countdowns_router
+from app.display.router import router as display_router
 from app.health import router as meta_router
 from app.modules.router import router as modules_router
 from app.users.router import auth_router, users_router
@@ -34,6 +35,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     logging.basicConfig(level=settings.log_level.upper())
+    for noisy in ("httpx", "apscheduler.executors.default"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     app = FastAPI(
         title="DoDomuDojadę",
         version="2.0.0.dev0",
@@ -61,6 +64,7 @@ def create_app() -> FastAPI:
         announcements_router,
         countdowns_router,
         modules_router,
+        display_router,
     ):
         app.include_router(router, prefix="/api")
     return app

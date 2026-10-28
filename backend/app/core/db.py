@@ -1,4 +1,5 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager
 from datetime import datetime
 from functools import lru_cache
 
@@ -42,3 +43,11 @@ def get_sessionmaker() -> sessionmaker[Session]:
 def get_db() -> Iterator[Session]:
     with get_sessionmaker()() as session:
         yield session
+
+
+SessionFactory = Callable[[], AbstractContextManager[Session]]
+
+
+def get_session_factory() -> SessionFactory:
+    """For code that opens its own sessions outside a request (e.g. long-lived streams)."""
+    return get_sessionmaker()

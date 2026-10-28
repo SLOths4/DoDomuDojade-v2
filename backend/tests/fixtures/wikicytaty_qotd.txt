@@ -1,0 +1,6 @@
+{| align="center" style="background-color: transparent; color: var(--color-base, inherit);"
+|'''''Dla chcącego nie ma nic trudnego.'''''
+|-
+| align="right" |[[Erazm z Rotterdamu]]
+|}
+<noinclude>[[Kategoria:Szablony cytatów dnia|10-28]]</noinclude>

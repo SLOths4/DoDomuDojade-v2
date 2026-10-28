@@ -1,0 +1,8 @@
+{{Wikiquote:Quote of the day/Template
+| image1 = Jonas Salk candid.jpg
+| image1px = 252px
+| image2 = File:L'origine de l'évolution.jpg
+| image2px = 292px
+| quote = <!-- ⨀ <br /> -->I speak about [[universal]] [[evolution]] and [[teleological]] evolution, because I think the process of evolution reflects the [[wisdom]] of [[nature]]. I see the [[need]] for wisdom to become operative. We need to try to put all of these things together in what I call an evolutionary [[philosophy]] of our time.
+| author = Jonas Salk
+}}

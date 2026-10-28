@@ -4,7 +4,7 @@ Wirtualna tablica informacyjna szkoły: ekran z odjazdami autobusów i tramwajó
 
 To druga wersja projektu, przepisana z PHP na Pythona. Pierwsza wersja i plan migracji: [SLOths4/DoDomuDojade](https://github.com/SLOths4/DoDomuDojade) (`resources/docs/python-migration.md`).
 
-> **Stan:** etap 1 (rdzeń backendu). Działa API panelu: logowanie, role, użytkownicy, ogłoszenia z propozycjami, odliczania i moduły. Integracje (odjazdy, pogoda, kalendarz, cytat, słowo), ekran i panel powstają w kolejnych etapach.
+> **Stan:** etapy 1–3 backendu. Działa API panelu i ekranu, integracje i strumień SSE. Frontend ekranu i panelu powstaje w kolejnych etapach.
 
 ## Uruchomienie
 
@@ -38,6 +38,7 @@ Plik konta serwisowego Google wrzuć do katalogu `secrets/` jako `google-service
 | `./ddd ps` | stan kontenerów |
 | `./ddd migrate` | aktualizacja schematu bazy |
 | `./ddd user add <login> [--role admin\|moderator]` | nowy użytkownik; hasło jest pytane interaktywnie |
+| `./ddd fetch` | natychmiast pobiera rozkład, pogodę, kalendarz oraz cytat i słowo dnia (normalnie robi to harmonogram) |
 | `./ddd cleanup` | usuwa odrzucone ogłoszenia i wpisy dziennika zdarzeń starsze niż 30 dni (robi to też harmonogram codziennie o 3:30) |
 | `./ddd backup` | zrzut bazy do `backups/` |
 
@@ -53,6 +54,7 @@ Pełna, klikalna dokumentacja: `/api/docs`. JSON używa `camelCase`.
 | Propozycje | `POST /api/announcements/proposals` (limit 5 na godzinę z jednego adresu) | publiczne |
 | Odliczania | `GET`/`POST /api/countdowns`, `GET`/`PATCH`/`DELETE /api/countdowns/{id}` | moderator, admin |
 | Moduły ekranu | `GET /api/modules` (moderator, admin), `PATCH /api/modules/{id}` (admin) | |
+| Ekran | `GET /api/display` (wszystkie moduły), `GET /api/display/{moduł}`, `GET /api/display/stream` (SSE) | publiczne |
 | Pomocnicze | `GET /api/config` (limity pól dla formularzy), `GET /api/health`, `GET /api/health/db` | publiczne |
 
 Zasady:
@@ -66,12 +68,29 @@ Zasady:
 - Okno modułu: `startTime` = `endTime` oznacza cały dzień, `startTime` > `endTime` — okno przez północ.
 - Każda zmiana ogłoszeń, odliczań i modułów trafia do tabeli `events` w tej samej transakcji (pod ekran na żywo).
 
+## Dane ekranu
+
+| Moduł | Źródło | Odświeżanie |
+|---|---|---|
+| `departures` | ZTM Poznań: rozkład GTFS (raz dziennie o 3:00) + opóźnienia GTFS-RT; wszystkie słupki o nazwie `STOP_NAME` (domyślnie AWF), autobusy i tramwaje, 90 minut naprzód | co 30 s |
+| `weather` | IMGW (temperatura, ciśnienie) + Airly (jakość powietrza, gdy jest klucz) | co 15 min |
+| `calendar` | Google Calendar przez konto serwisowe | co 5 min |
+| `quote`, `word` | Wikicytaty i Wikisłownik albo Wikiquote i Wiktionary — dzień po polsku, dzień po angielsku; przy braku sieci lokalna lista | raz dziennie (i przy starcie) |
+| `announcement`, `countdown` | baza | przy każdej zmianie |
+
+Każdy moduł zwraca `{"status": "active"|"empty"|"inactive", "data", "message"}`. `inactive` — moduł wyłączony lub poza swoim oknem czasowym.
+
+Strumień `GET /api/display/stream` (SSE) wysyła `event: snapshot` z wszystkimi modułami po połączeniu i co minutę, a `event: module` (`{"name", "status", "data", "message"}`) gdy zmieni się pojedynczy moduł. Ostatnie wyniki pogody i kalendarza są trzymane w bazie, więc po restarcie ekran od razu ma dane.
+
+Dane ZTM: źródło ZTM Poznań (otwarte dane), przetworzone. Cytaty i słowa z projektów Wikimedia na licencji CC BY-SA — ekran podaje źródło.
+
 ## Struktura
 
 ```
 backend/            API: Python 3.13, FastAPI, SQLAlchemy 2, Alembic
   app/core/         konfiguracja, baza, sesja i CSRF, błędy, tłumaczenia, zdarzenia, harmonogram
   app/<moduł>/      jeden katalog na funkcję: models.py, schemas.py, service.py, router.py
+  app/integrations/ ZTM (GTFS), pogoda, kalendarz, cytat i słowo dnia
   alembic/          migracje bazy
 frontend/           strony HTML + Alpine.js + Tailwind CSS, serwowane przez Caddy
   display/          ekran

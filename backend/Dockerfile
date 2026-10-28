@@ -17,7 +17,8 @@ COPY alembic.ini docker-entrypoint.sh ./
 COPY alembic ./alembic
 COPY app ./app
 
-RUN useradd --system --no-create-home app && chmod +x docker-entrypoint.sh
+RUN useradd --system --no-create-home app && chmod +x docker-entrypoint.sh \
+    && mkdir -p /app/data && chown app /app/data
 USER app
 
 EXPOSE 8000

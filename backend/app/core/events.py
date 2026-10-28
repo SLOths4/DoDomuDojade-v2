@@ -16,7 +16,7 @@ _PENDING_KEY = "pending_events"
 
 
 class Event(CreatedAtMixin, Base):
-    """Change log written in the same transaction as the data; id doubles as the SSE event id."""
+    """Audit log of changes, written in the same transaction as the data."""
 
     __tablename__ = "events"
 
@@ -25,42 +25,50 @@ class Event(CreatedAtMixin, Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB)
 
 
+# Event type prefix -> display topic. "modules" means every module may have changed.
+_TOPICS = {"announcement": "announcement", "countdown": "countdown", "module": "modules"}
+
+
+def topic_for(event_type: str) -> str | None:
+    return _TOPICS.get(event_type.split(".", 1)[0])
+
+
 class Broker:
-    """Fans committed events out to SSE subscribers; publish() is safe from worker threads."""
+    """Fans topic names out to SSE subscribers; publish() is safe from worker threads."""
 
     def __init__(self) -> None:
-        self._subscribers: set[asyncio.Queue[Event]] = set()
+        self._subscribers: set[asyncio.Queue[str]] = set()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._lock = threading.Lock()
 
     def bind(self, loop: asyncio.AbstractEventLoop) -> None:
         self._loop = loop
 
-    def subscribe(self) -> asyncio.Queue[Event]:
-        queue: asyncio.Queue[Event] = asyncio.Queue(maxsize=100)
+    def subscribe(self) -> asyncio.Queue[str]:
+        queue: asyncio.Queue[str] = asyncio.Queue(maxsize=100)
         with self._lock:
             self._subscribers.add(queue)
         return queue
 
-    def unsubscribe(self, queue: asyncio.Queue[Event]) -> None:
+    def unsubscribe(self, queue: asyncio.Queue[str]) -> None:
         with self._lock:
             self._subscribers.discard(queue)
 
-    def publish(self, item: Event) -> None:
+    def publish(self, topic: str) -> None:
         loop = self._loop
         if loop is None or loop.is_closed():
             return
         with self._lock:
             queues = list(self._subscribers)
         for queue in queues:
-            loop.call_soon_threadsafe(_offer, queue, item)
+            loop.call_soon_threadsafe(_offer, queue, topic)
 
 
-def _offer(queue: asyncio.Queue[Event], item: Event) -> None:
+def _offer(queue: asyncio.Queue[str], topic: str) -> None:
     try:
-        queue.put_nowait(item)
+        queue.put_nowait(topic)
     except asyncio.QueueFull:
-        logger.warning("Dropping event %s for a slow subscriber", item.id)
+        logger.warning("Dropping %s update for a slow subscriber", topic)
 
 
 broker = Broker()
@@ -75,8 +83,9 @@ def record_event(db: Session, type_: str, **payload: Any) -> Event:
 
 @event.listens_for(Session, "after_commit")
 def _publish_committed(session: Session) -> None:
-    for item in session.info.pop(_PENDING_KEY, []):
-        broker.publish(item)
+    topics = {topic_for(item.type) for item in session.info.pop(_PENDING_KEY, [])}
+    for topic in topics - {None}:
+        broker.publish(str(topic))
 
 
 @event.listens_for(Session, "after_rollback")

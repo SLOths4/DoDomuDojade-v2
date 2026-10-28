@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.announcements.models import Announcement, AnnouncementStatus
 from app.core import clock
-from app.core.events import Broker, Event, broker, record_event
+from app.core.events import Broker, Event, broker, record_event, topic_for
 from app.maintenance import cleanup
 
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
@@ -20,18 +20,14 @@ def test_broker_delivers_to_every_subscriber() -> None:
         local = Broker()
         local.bind(asyncio.get_running_loop())
         first, second = local.subscribe(), local.subscribe()
-        local.publish(Event(id=1, type="countdown.created", payload={}))
+        local.publish("countdown")
         received = [await asyncio.wait_for(q.get(), 1) for q in (first, second)]
         local.unsubscribe(first)
-        local.publish(Event(id=2, type="countdown.deleted", payload={}))
+        local.publish("weather")
         assert first.empty()
-        return [e.type for e in received] + [(await second.get()).type]
+        return [*received, await second.get()]
 
-    assert asyncio.run(scenario()) == [
-        "countdown.created",
-        "countdown.created",
-        "countdown.deleted",
-    ]
+    assert asyncio.run(scenario()) == ["countdown", "countdown", "weather"]
 
 
 @pytest.mark.db
@@ -40,18 +36,21 @@ def test_events_are_published_only_after_commit(db: Session) -> None:
         broker.bind(asyncio.get_running_loop())
         queue = broker.subscribe()
         try:
-            record_event(db, "module.updated", id=1)
+            record_event(db, "announcement.created", id="a")
             db.rollback()
-            record_event(db, "module.updated", id=2)
+            record_event(db, "countdown.created", id=1)
+            record_event(db, "countdown.updated", id=1)
             await asyncio.sleep(0)
             assert queue.empty()
             db.commit()
-            item = await asyncio.wait_for(queue.get(), 1)
-            return [item.type, str(item.payload["id"])]
+            topic = await asyncio.wait_for(queue.get(), 1)
+            await asyncio.sleep(0)
+            assert queue.empty()
+            return [topic]
         finally:
             broker.unsubscribe(queue)
 
-    assert asyncio.run(scenario()) == ["module.updated", "2"]
+    assert asyncio.run(scenario()) == ["countdown"]
 
 
 @pytest.mark.db
@@ -93,3 +92,9 @@ def test_every_error_code_has_messages_in_both_languages() -> None:
         messages = json.loads((APP_DIR / "locales" / f"{locale}.json").read_text(encoding="utf-8"))
         missing = {code for code in codes if f"errors.{code}" not in messages}
         assert not missing, f"{locale}: {missing}"
+
+
+def test_event_types_map_to_display_topics() -> None:
+    assert topic_for("announcement.approved") == "announcement"
+    assert topic_for("module.updated") == "modules"
+    assert topic_for("user.created") is None

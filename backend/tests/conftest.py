@@ -3,6 +3,7 @@ import os
 os.environ["SCHEDULER_ENABLED"] = "false"
 
 from collections.abc import Callable, Iterator
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.core import rate_limit
 from app.core.config import get_settings
-from app.core.db import get_db, get_engine, get_sessionmaker
+from app.core.db import get_db, get_engine, get_session_factory, get_sessionmaker
 from app.core.security import hash_password
 from app.main import create_app
 from app.users.models import Role, User
@@ -91,6 +92,7 @@ def db(db_engine: Engine) -> Iterator[Session]:
 def app(db: Session) -> FastAPI:
     application = create_app()
     application.dependency_overrides[get_db] = lambda: db
+    application.dependency_overrides[get_session_factory] = lambda: lambda: nullcontext(db)
     return application
 
 
